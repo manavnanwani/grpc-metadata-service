@@ -3,9 +3,11 @@ package main
 import (
 	"log"
 
-	pb "github.com/manavnanwani/grpc-client-server/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	greet_pb "github.com/manavnanwani/grpc-metadata-service/proto/greet"
+	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
 )
 
 const port = ":8080"
@@ -18,11 +20,9 @@ func main() {
 
 	defer conn.Close()
 
-	client := pb.NewGreetServiceClient(conn)
-
-	// names := &pb.NamesList{
-	// 	Names: []string{"Alice", "Bob"},
-	// }
-
+	client := greet_pb.NewGreetServiceClient(conn)
 	callSayHello(client)
+
+	metadata_client := metadata_pb.NewMetadataServiceClient(conn)
+	getMetadataWorkflow(metadata_client)
 }

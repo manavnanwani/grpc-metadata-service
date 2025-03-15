@@ -4,14 +4,20 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/manavnanwani/grpc-client-server/proto"
+	greet_pb "github.com/manavnanwani/grpc-metadata-service/proto/greet"
+	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
+
 	"google.golang.org/grpc"
 )
 
 const port = ":8080"
 
 type helloServer struct {
-	pb.GreetServiceServer
+	greet_pb.GreetServiceServer
+}
+
+type metadataServer struct {
+	metadata_pb.MetadataServiceServer
 }
 
 func main() {
@@ -21,7 +27,10 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterGreetServiceServer(grpcServer, &helloServer{})
+
+	greet_pb.RegisterGreetServiceServer(grpcServer, &helloServer{})
+	metadata_pb.RegisterMetadataServiceServer(grpcServer, &metadataServer{})
+
 	log.Printf("server started at %v", lis.Addr())
 
 	if err := grpcServer.Serve(lis); err != nil {

@@ -1,0 +1,17 @@
+syntax="proto3";
+option go_package = "./proto/metadata";
+
+package metadata_service;
+
+service MetadataService{
+    rpc GetData(NoParam) returns (DataResponse);
+}
+
+message NoParam{};
+
+message DataResponse{
+    string message = 1;
+    string name = 2;
+    string region = 3;
+}
+
