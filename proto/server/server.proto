@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./proto/server";
+
+package server_service;
+
+service ServerService {
+  rpc RegisterServer (RegisterRequest) returns (RegisterResponse);
+}
+
+message RegisterRequest {
+  string server_id = 1;
+}
+
+message RegisterResponse {
+  bool success = 1;
+}

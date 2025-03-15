@@ -4,10 +4,12 @@ option go_package = "./proto/metadata";
 package metadata_service;
 
 service MetadataService{
-    rpc GetData(NoParam) returns (DataResponse);
+    rpc CollectMetadata(MetadataRequest) returns (DataResponse);
 }
 
-message NoParam{};
+message MetadataRequest {
+    string server_id = 1;
+}
 
 message DataResponse{
     string message = 1;

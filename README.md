@@ -1,0 +1,1 @@
+1. When adding new service, to generate Proto Files - `protoc --go_out=. --go-grpc_out=. proto/service/service.proto`
