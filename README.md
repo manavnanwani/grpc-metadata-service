@@ -1,3 +1,7 @@
+# gRPC Project
+
+This project demonstrates a simple implementation of a gRPC-based system with a central client and multiple servers. The client registers with each server and handles metadata requests. The servers provide various services that can be extended by adding new proto buffers and generating the corresponding Go files.
+
 ## Starting the Central Client
 
 ```
