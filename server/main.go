@@ -1,40 +1,56 @@
 package main
 
-// import (
-// 	"log"
-// 	"net"
+import (
+	"context"
+	"fmt"
+	"log"
+	"math/rand"
+	"net"
+	"time"
 
-// 	greet_pb "github.com/manavnanwani/grpc-metadata-service/proto/greet"
-// 	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
+	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
+	server_pb "github.com/manavnanwani/grpc-metadata-service/proto/server"
 
-// 	"google.golang.org/grpc"
-// )
+	"google.golang.org/grpc"
+)
 
-// const port = ":8080"
+type server struct {
+	metadata_pb.UnimplementedMetadataServiceServer
+	serverID string
+}
 
-// type helloServer struct {
-// 	greet_pb.GreetServiceServer
-// }
+func main() {
+	centralClient := "localhost:50051"
 
-// type metadataServer struct {
-// 	metadata_pb.MetadataServiceServer
-// }
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	port := r.Intn(1001) + 50000
+	serverID := fmt.Sprintf("localhost:%d", port)
 
-// func main() {
-// 	lis, err := net.Listen("tcp", port)
-// 	if err != nil {
-// 		log.Fatalf("Failed to start the server %v", err)
-// 	}
+	fmt.Printf("Server ID: %s\n", serverID)
+	fmt.Printf("Connecting to central client at %s\n", centralClient)
+	conn, err := grpc.Dial(centralClient, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed to connect to central client: %v", err)
+	}
+	defer conn.Close()
+	client := server_pb.NewServerServiceClient(conn)
 
-// 	grpcServer := grpc.NewServer()
+	_, err = client.RegisterServer(context.Background(), &server_pb.RegisterRequest{ServerId: serverID})
+	if err != nil {
+		log.Fatalf("Failed to register server: %v", err)
+	}
 
-// 	greet_pb.RegisterGreetServiceServer(grpcServer, &helloServer{})
-// 	metadata_pb.RegisterMetadataServiceServer(grpcServer, &metadataServer{})
+	lis, err := net.Listen("tcp", serverID)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
 
-// 	log.Printf("server started at %v", lis.Addr())
+	s := &server{serverID: serverID}
+	grpcServer := grpc.NewServer()
+	metadata_pb.RegisterMetadataServiceServer(grpcServer, s)
 
-// 	if err := grpcServer.Serve(lis); err != nil {
-// 		log.Fatalf("Failed to start: %v", err)
-// 	}
-// 	log.Printf(lis.Addr().Network())
-// }
+	fmt.Printf("Server running on %s\n", serverID)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
+}

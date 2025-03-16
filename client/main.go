@@ -1,28 +1,51 @@
 package main
 
-// import (
-// 	"log"
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"sync"
 
-// 	"google.golang.org/grpc"
-// 	"google.golang.org/grpc/credentials/insecure"
+	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
+	server_pb "github.com/manavnanwani/grpc-metadata-service/proto/server"
 
-// 	greet_pb "github.com/manavnanwani/grpc-metadata-service/proto/greet"
-// 	metadata_pb "github.com/manavnanwani/grpc-metadata-service/proto/metadata"
-// )
+	"google.golang.org/grpc"
+)
 
-// const port = ":8080"
+type server struct {
+	metadata_pb.UnimplementedMetadataServiceServer
+	server_pb.UnimplementedServerServiceServer
 
-// func main() {
-// 	conn, err := grpc.Dial("localhost"+port, grpc.WithTransportCredentials((insecure.NewCredentials())))
-// 	if err != nil {
-// 		log.Fatalf("Failed to connect to the server %v", err)
-// 	}
+	mu      sync.Mutex
+	servers map[string]metadata_pb.MetadataServiceClient
+}
 
-// 	defer conn.Close()
+func (s *server) RegisterServer(ctx context.Context, req *server_pb.RegisterRequest) (*server_pb.RegisterResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	conn, err := grpc.Dial(req.ServerId, grpc.WithInsecure())
+	if err != nil {
+		return &server_pb.RegisterResponse{Success: false}, err
+	}
+	s.servers[req.ServerId] = metadata_pb.NewMetadataServiceClient(conn)
+	fmt.Printf("**** Server %s registered\n", req.ServerId)
+	return &server_pb.RegisterResponse{Success: true}, nil
+}
 
-// 	client := greet_pb.NewGreetServiceClient(conn)
-// 	callSayHello(client)
+func main() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	s := &server{servers: make(map[string]metadata_pb.MetadataServiceClient)}
+	grpcServer := grpc.NewServer()
+	metadata_pb.RegisterMetadataServiceServer(grpcServer, s)
+	server_pb.RegisterServerServiceServer(grpcServer, s)
 
-// 	metadata_client := metadata_pb.NewMetadataServiceClient(conn)
-// 	getMetadataWorkflow(metadata_client)
-// }
+	go s.collectMetadata()
+	fmt.Println("Client listening on :50051")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
+}
